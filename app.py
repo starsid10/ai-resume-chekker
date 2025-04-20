@@ -1,6 +1,15 @@
 # app.py
 import streamlit as st
+import spacy
 import os
+
+# Check if model is downloaded, if not, download it
+model_path = os.path.join("degree", "model")
+if not os.path.exists(model_path):
+    # Download the required model
+    spacy.cli.download("en_core_web_sm")  # Use the correct model here
+
+
 from resume_parser import extract_text_from_pdf, extract_text_from_docx
 from preprocess import clean_text
 from your_matching_script import rank_resumes  # reuse functions
