@@ -1,49 +1,34 @@
-# app.py
 import streamlit as st
-import spacy
-from pathlib import Path
-
-# Check if the model is already downloaded, if not, download it
-model_path = Path("path/to/your/model")
-
-if not model_path.exists():
-    import os
-    os.system("python -m spacy download en_core_web_sm")
+from pyresparser import ResumeParser
 import os
+import tempfile
 
-# Check if model is downloaded, if not, download it
-model_path = os.path.join("degree", "model")
-if not os.path.exists(model_path):
-    # Download the required model
-    spacy.cli.download("en_core_web_sm")  # Use the correct model here
+st.set_page_config(page_title="AI Resume Screener", layout="centered")
 
+st.title("📄 AI-Powered Resume Screener")
+st.write("Upload a resume (PDF or DOCX) to extract key information like name, skills, education, etc.")
 
-from resume_parser import extract_text_from_pdf, extract_text_from_docx
+uploaded_file = st.file_uploader("Choose a resume file", type=["pdf", "docx"])
 
-from preprocess import clean_text
-from your_matching_script import rank_resumes  # reuse functions
+if uploaded_file is not None:
+    # Save file temporarily
+    with tempfile.NamedTemporaryFile(delete=False, suffix=uploaded_file.name.split('.')[-1]) as temp_file:
+        temp_file.write(uploaded_file.getbuffer())
+        temp_path = temp_file.name
 
-st.title("AI Resume Screening System")
-
-uploaded_files = st.file_uploader("Upload Resumes (PDF or DOCX)", accept_multiple_files=True)
-job_description = st.text_area("Paste the Job Description")
-
-if st.button("Match Resumes"):
-    resume_texts = []
-    filenames = []
-
-    for file in uploaded_files:
-        if file.name.endswith('.pdf'):
-            text = extract_text_from_pdf(file)
+    # Parse resume
+    try:
+        data = ResumeParser(temp_path).get_extracted_data()
+        if data:
+            st.success("✅ Resume parsed successfully!")
+            st.subheader("🔍 Extracted Information:")
+            for key, value in data.items():
+                st.markdown(f"**{key.capitalize()}**: {value}")
         else:
-            text = extract_text_from_docx(file)
-        cleaned = clean_text(text)
-        resume_texts.append(cleaned)
-        filenames.append(file.name)
+            st.warning("Could not extract data. Please try another resume.")
 
-    jd_cleaned = clean_text(job_description)
-    ranked_indices, scores = rank_resumes(resume_texts, jd_cleaned)
+    except Exception as e:
+        st.error(f"❌ Error while parsing resume: {str(e)}")
 
-    st.subheader("Top Matching Resumes:")
-    for idx in ranked_indices:
-        st.write(f"{filenames[idx]} - Score: {scores[idx]:.2f}")
+    # Clean up temp file
+    os.remove(temp_path)
