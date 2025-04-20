@@ -1,6 +1,14 @@
 # app.py
 import streamlit as st
 import spacy
+from pathlib import Path
+
+# Check if the model is already downloaded, if not, download it
+model_path = Path("path/to/your/model")
+
+if not model_path.exists():
+    import os
+    os.system("python -m spacy download en_core_web_sm")
 import os
 
 # Check if model is downloaded, if not, download it
@@ -11,6 +19,7 @@ if not os.path.exists(model_path):
 
 
 from resume_parser import extract_text_from_pdf, extract_text_from_docx
+
 from preprocess import clean_text
 from your_matching_script import rank_resumes  # reuse functions
 
